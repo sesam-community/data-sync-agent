@@ -88,7 +88,7 @@ def assert_slave_systems(master_node, slave_nodes):
                 "type": "system:url",
                 "url_pattern": slave_node["endpoint"],
                 "verify_ssl": True,
-                "jwt_token": slave_node["api_token"],
+                "jwt_token": slave_node["jwt_token"],
                 "authentication": "jwt",
                 "connect_timeout": 60,
                 "read_timeout": 7200
@@ -96,7 +96,7 @@ def assert_slave_systems(master_node, slave_nodes):
 
         if "api_connection" not in slave_node:
             slave_node["api_connection"] = sesamclient.Connection(sesamapi_base_url=slave_node["endpoint"] + "/api",
-                                                                  jwt_auth_token=slave_node["api_token"])
+                                                                  jwt_auth_token=slave_node["jwt_token"])
 
         assert_slave_system(master_node, system_config)
 
