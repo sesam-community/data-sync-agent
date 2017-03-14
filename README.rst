@@ -13,6 +13,7 @@ Microservice that consumes config from slave nodes and ensures their datasets ar
 Configuration in Sesam:
 
 ::
+
     {
         "_id": "data-sync-microservice",
         "name": "Name of microservice",
