@@ -1,2 +1,2 @@
-# data-replication-agent
-Sink implementation that consumes config from slave nodes and ensures data is replicated to the server.
+# data-sync-agent
+Microservice that consumes config from slave nodes and ensures their datasets are synced to a master node 
