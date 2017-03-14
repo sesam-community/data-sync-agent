@@ -1,17 +1,52 @@
-========================
-python-datasink-template
-========================
+===============
+data-sync-agent
+===============
 
-A python micro service template for receiving a JSON entity stream from a Sesam service instance. 
+Microservice that consumes config from slave nodes and ensures their datasets are synced to a master node
 
 ::
 
-  $ python3 service/datasink-service.py
-   * Running on http://0.0.0.0:5001/ (Press CTRL+C to quit)
-   * Restarting with stat
-   * Debugger is active!
-   * Debugger pin code: 260-787-156
+  $ export MASTER_NODE="{..}"
+  $ export SLAVE_NODES="[..]"
+  $ python3 service/data-sync-agent-service.py
 
-The service listens on port 5001.
+Configuration in Sesam:
 
-JSON entities can be posted to 'http://localhost:5001/receiver'.
+::
+    {
+        "_id": "data-sync-microservice",
+        "name": "Name of microservice",
+        "type": "system:microservice",
+        "docker": {
+            "image": "sesam/data-sync-agent:latest",
+            "port": 5000,
+            "memory": 128,
+            "environment": {
+                "MASTER_NODE": {
+                    "_id" : "m1",
+                    "endpoint" : "https://m1.sesam.cloud",
+                    "jwt_token" : "msnfskfksni",
+                },
+                "SLAVE_NODES": [
+                    {
+                        "_id" : "s1",
+                        "endpoint" : "https://s1.sesam.cloud",
+                        "jwt_token" : "msnfskfklrl464ni"
+                    },
+                    {
+                        "_id" : "s2",
+                        "endpoint" : "https://s2.sesam.cloud",
+                        "jwt_token" : "msnfskfklrl464ni"
+                    }
+                ]
+            }
+        },
+        "use_https": false,
+        "verify_ssl": false,
+        "username": None,
+        "password": None,
+        "authentication": "basic",
+        "connect_timeout": 60,
+        "read_timeout": 7200
+    }
+

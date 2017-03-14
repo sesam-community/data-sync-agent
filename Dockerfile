@@ -5,4 +5,4 @@ WORKDIR /service
 RUN pip install -r requirements.txt
 EXPOSE 5000/tcp
 ENTRYPOINT ["python"]
-CMD ["datasink-service.py"]
+CMD ["data-sync-agent-service.py"]
