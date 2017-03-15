@@ -13,46 +13,6 @@ overwrite_pipes = False
 delete_pipes = True
 update_interval = 300
 
-"""
-{
-    "_id": "data-sync-microservice",
-    "name": "Name of microservice",
-    "type": "system:microservice",
-    "docker": {
-        "image": "sesam/data-sync-agent:latest",
-        "port": 5000,
-        "memory": 128,
-        "environment": {
-            "MASTER_NODE": {
-                "_id" : "m1",
-                "endpoint" : "https://m1.sesam.cloud",
-                "jwt_token" : "msnfskfksni",
-            },
-            "SLAVE_NODES": [
-                {
-                    "_id" : "s1",
-                    "endpoint" : "https://s1.sesam.cloud",
-                    "jwt_token" : "msnfskfklrl464ni"
-                },
-                {
-                    "_id" : "s2",
-                    "endpoint" : "https://s2.sesam.cloud",
-                    "jwt_token" : "msnfskfklrl464ni",
-                    "sync_interval": 300
-                }
-            ]
-        }
-    },
-    "use_https": false,
-    "verify_ssl": false,
-    "username": None,
-    "password": None,
-    "authentication": "basic",
-    "connect_timeout": 60,
-    "read_timeout": 7200
-}
-"""
-
 
 def assert_slave_system(master_node, system_config):
     """
