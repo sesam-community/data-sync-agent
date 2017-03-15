@@ -147,13 +147,13 @@ def assert_sync_pipes(master_node, slave_nodes):
             pipe_config = {
                 "_id": pipe_id,
                 "type": "pipe",
+                "add_namespaces": False,
                 "source": {
                     "type": "json",
                     "system": "slave-%s" % slave_node["_id"],
                     "url": dataset,
                     "supports_since": True,
-                    "is_chronological": True,
-                    "add_namespaces": False
+                    "is_chronological": True
                 },
                 "sink": {
                     "type": "dataset",
