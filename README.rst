@@ -23,6 +23,10 @@ Configuration in Sesam:
             "port": 5000,
             "memory": 128,
             "environment": {
+                "OVERWRITE_MASTER_SYSTEMS": "false",
+                "OVERWRITE_MASTER_PIPES": "false",
+                "DELETE_MASTER_PIPES": "true",
+                "UPDATE_INTERVAL": "300",
                 "MASTER_NODE": {
                     "_id" : "m1",
                     "endpoint" : "https://m1.sesam.cloud",
@@ -32,7 +36,8 @@ Configuration in Sesam:
                     {
                         "_id" : "s1",
                         "endpoint" : "https://s1.sesam.cloud",
-                        "jwt_token" : "msnfskfklrl464ni"
+                        "jwt_token" : "msnfskfklrl464ni",
+                        "sync_interval": 300
                     },
                     {
                         "_id" : "s2",
@@ -50,4 +55,3 @@ Configuration in Sesam:
         "connect_timeout": 60,
         "read_timeout": 7200
     }
-

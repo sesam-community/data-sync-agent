@@ -8,6 +8,10 @@ from time import sleep
 import sesamclient
 
 logger = None
+overwrite_systems = False
+overwrite_pipes = False
+delete_pipes = True
+update_interval = 300
 
 """
 {
@@ -33,7 +37,8 @@ logger = None
                 {
                     "_id" : "s2",
                     "endpoint" : "https://s2.sesam.cloud",
-                    "jwt_token" : "msnfskfklrl464ni"
+                    "jwt_token" : "msnfskfklrl464ni",
+                    "sync_interval": 300
                 }
             ]
         }
@@ -61,12 +66,15 @@ def assert_slave_system(master_node, system_config):
     if system is None:
         logger.info("Adding system '%s' in the master" % system_config["_id"])
         master_node["api_connection"].add_systems([system_config])
-    else:
+    elif overwrite_systems:
         logger.info("Modifying existing system '%s' in the master" % system_config["_id"])
         system.modify(system_config)
 
 
 def assert_slave_systems(master_node, slave_nodes):
+
+    master_node["api_connection"] = sesamclient.Connection(sesamapi_base_url=master_node["endpoint"] + "/api",
+                                                           jwt_auth_token=master_node["jwt_token"])
 
     for slave_node in slave_nodes:
         logger.info("Processing slave system '%s'.." % slave_node["_id"])
@@ -74,7 +82,7 @@ def assert_slave_systems(master_node, slave_nodes):
                 "_id": "slave-%s" % slave_node["_id"],
                 "name": slave_node["_id"],
                 "type": "system:url",
-                "url_pattern": slave_node["endpoint"],
+                "url_pattern": slave_node["endpoint"] + "/api/datasets/%s/entities",
                 "verify_ssl": True,
                 "jwt_token": slave_node["jwt_token"],
                 "authentication": "jwt",
@@ -100,6 +108,9 @@ def get_slave_node_datasets(slave_node):
     all_source_datasets = []
     all_sink_datasets = []
     for pipe in slave_node["api_connection"].get_pipes():
+        if pipe.id.startswith('system:'):
+            continue
+
         source = pipe.config["effective"].get("source")
         sink = pipe.config["effective"].get("sink")
 
@@ -121,8 +132,8 @@ def get_slave_node_datasets(slave_node):
 
             all_source_datasets.extend(source_datasets)
 
-    all_sink_datasets = set(all_sink_datasets)
-    all_source_datasets = set(all_source_datasets)
+    all_sink_datasets = set([d for d in all_sink_datasets if not d.startswith('system:')])
+    all_source_datasets = set([d for d in all_source_datasets if not d.startswith('system:')])
 
     # These datasets should exist as pipes in the master
     slave_node["datasets"] = all_sink_datasets.difference(all_source_datasets)
@@ -151,13 +162,14 @@ def assert_sync_pipes(master_node, slave_nodes):
         logger.info("Processing slave sync pipes for '%s'" % slave_node["_id"])
 
         # Delete pipes whose dataset used to exist in the slave but has been deleted since the last time we checked
-        for dataset in slave_node.get("datasets_to_delete", []):
-            # Check if it exists first, don't try to delete non-existing datasets
-            pipe_id = "%s-from-slave-%s" % (dataset, slave_node["_id"])
-            if master_node["api_conection"].get_pipe(pipe_id):
-                logger.info("Removing pipe '%s' from master because the dataset "
-                            "in the slave has been removed" % pipe_id)
-                master_node["api_conection"].delete_pipe(pipe_id)
+        if delete_pipes:
+            for dataset in slave_node.get("datasets_to_delete", []):
+                # Check if it exists first, don't try to delete non-existing datasets
+                pipe_id = "%s-from-slave-%s" % (dataset, slave_node["_id"])
+                if master_node["api_connection"].get_pipe(pipe_id):
+                    logger.info("Removing pipe '%s' from master because the dataset "
+                                "in the slave has been removed" % pipe_id)
+                    master_node["api_connection"].delete_pipe(pipe_id)
 
         # If the pipe doesn't exist, add it
         for dataset in slave_node.get("datasets", []):
@@ -169,25 +181,28 @@ def assert_sync_pipes(master_node, slave_nodes):
                 "source": {
                     "type": "json",
                     "system": "slave-%s" % slave_node["_id"],
-                    "url": "datasets/%s" % dataset,
+                    "url": dataset,
                     "supports_since": True,
                     "is_chronological": True
                 },
                 "sink": {
                     "type": "dataset",
-                    "dataset": dataset
+                    "dataset": "synctest-remove-me-" + dataset
+                },
+                "pump": {
+                    "schedule_interval": slave_node.get("sync_interval", 30)
                 }
             }
 
             pipe = master_node["api_connection"].get_pipe(pipe_id)
-            if pipe is not None:
-                # The pipe exists, so update it (in case someone has modified it)
-                pipe.modify(pipe_config)
-                logger.info("Modifying existing pipe '%s' in the master" % pipe_id)
-            else:
+            if pipe is None:
                 # New pipe - post it
-                master_node["api_connection"].add_pipes(pipe_id, [pipe_config])
                 logger.info("Adding new sync pipe '%s' to the master" % pipe_id)
+                master_node["api_connection"].add_pipes([pipe_config])
+            elif overwrite_pipes:
+                # The pipe exists, so update it (in case someone has modified it)
+                logger.info("Modifying existing pipe '%s' in the master" % pipe_id)
+                pipe.modify(pipe_config)
 
 
 if __name__ == '__main__':
@@ -206,6 +221,29 @@ if __name__ == '__main__':
     if "MASTER_NODE" not in os.environ:
         logger.error("MASTER_NODE configuration missing!")
         sys.exit(1)
+
+    if "OVERWRITE_MASTER_SYSTEMS" in os.environ:
+        if os.environ["OVERWRITE_MASTER_SYSTEMS"].lower() in ["true", "1"]:
+            overwrite_systems = True
+
+        logger.info("Setting overwrite systems flag to %s" % overwrite_systems)
+
+    if "OVERWRITE_MASTER_PIPES" in os.environ:
+        if os.environ["OVERWRITE_MASTER_PIPES"].lower() in ["true", "1"]:
+            overwrite_pipes = True
+
+        logger.info("Setting overwrite pipes flag to %s" % overwrite_pipes)
+
+    if "DELETE_MASTER_PIPES" in os.environ:
+        if os.environ["DELETE_MASTER_PIPES"].lower() in ["true", "1"]:
+            delete_pipes = True
+
+    if "UPDATE_INTERVAL" in os.environ:
+        try:
+            update_interval = int(os.environ.get("UPDATE_INTERVAL"))
+            logger.info("Setting update interval to %s" % update_interval)
+        except:
+            logger.warning("Update interval is not an integer! Falling back to default")
 
     master_node = json.loads(os.environ["MASTER_NODE"])
 
@@ -232,4 +270,4 @@ if __name__ == '__main__':
         # Sleep for a while then go again
         logger.info("Master updated to sync from slaves, sleeping for 5 minutes...")
 
-        sleep(5*60)
+        sleep(update_interval)
