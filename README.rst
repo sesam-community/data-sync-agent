@@ -20,7 +20,7 @@ System configuration in Sesam:
                 "OVERWRITE_MASTER_SYSTEMS": "false",
                 "OVERWRITE_MASTER_PIPES": "false",
                 "DELETE_MASTER_PIPES": "true",
-                "UPDATE_INTERVAL": "300",
+                "UPDATE_INTERVAL": "1800",
                 "MASTER_NODE": {
                     "_id" : "m1",
                     "endpoint" : "https://m1.sesam.cloud",

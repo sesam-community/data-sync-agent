@@ -11,7 +11,7 @@ logger = None
 overwrite_systems = False
 overwrite_pipes = False
 delete_pipes = True
-update_interval = 300
+update_interval = 1800
 
 
 def assert_slave_system(master_node, system_config):
