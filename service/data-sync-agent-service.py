@@ -73,7 +73,12 @@ def assert_slave_system(master_node, system_config):
 
 def assert_slave_systems(master_node, slave_nodes):
 
-    master_node["api_connection"] = sesamclient.Connection(sesamapi_base_url=master_node["endpoint"] + "/api",
+    if not master_node["endpoint"].endswith("/"):
+        master_node["endpoint"] += "/"
+
+    logger.info("Master API endpoint is: %s" % master_node["endpoint"] + "api")
+
+    master_node["api_connection"] = sesamclient.Connection(sesamapi_base_url=master_node["endpoint"] + "api",
                                                            jwt_auth_token=master_node["jwt_token"])
 
     for slave_node in slave_nodes:
@@ -82,7 +87,7 @@ def assert_slave_systems(master_node, slave_nodes):
                 "_id": "slave-%s" % slave_node["_id"],
                 "name": slave_node["_id"],
                 "type": "system:url",
-                "url_pattern": slave_node["endpoint"] + "/api/datasets/%s/entities",
+                "url_pattern": slave_node["endpoint"] + "api/datasets/%s/entities",
                 "verify_ssl": True,
                 "jwt_token": slave_node["jwt_token"],
                 "authentication": "jwt",
@@ -90,8 +95,12 @@ def assert_slave_systems(master_node, slave_nodes):
                 "read_timeout": 7200
         }
 
+        if not slave_node["endpoint"].endswith("/"):
+            slave_node["endpoint"] += "/"
+
         if "api_connection" not in slave_node:
-            slave_node["api_connection"] = sesamclient.Connection(sesamapi_base_url=slave_node["endpoint"] + "/api",
+            logger.info("Slave '%s' API endpoint is: %s" % (slave_node["_id"], slave_node["endpoint"] + "api"))
+            slave_node["api_connection"] = sesamclient.Connection(sesamapi_base_url=slave_node["endpoint"] + "api",
                                                                   jwt_auth_token=slave_node["jwt_token"])
 
         assert_slave_system(master_node, system_config)
