@@ -196,7 +196,7 @@ def assert_sync_pipes(master_node, slave_nodes):
                 },
                 "sink": {
                     "type": "dataset",
-                    "dataset": "synctest-remove-me-" + dataset
+                    "dataset": dataset
                 },
                 "pump": {
                     "schedule_interval": slave_node.get("sync_interval", 30)
