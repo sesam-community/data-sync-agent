@@ -57,31 +57,19 @@ def assert_slave_system(master_node, system_config):
     :return:
     """
 
-    master_api_url = urljoin(master_node["endpoint"], "/api/systems")
-    headers = {
-        "Authorization": "Bearer " + master_node["jwt_token"]
-    }
-
-    payload = json.dumps(system_config)
-
-    # Check if the system already exists
-    rd = requests.get(master_api_url + "/" + system_config["_id"], headers=headers)
-
-    if rd.status_code == 404:
-        # POST it
-        rd = requests.post(master_api_url, headers=headers, data=payload)
-    elif rd.status_code == 200:
-        # PUT it
-        rd = requests.put(master_api_url + "/" + system_config["_id"], headers=headers, data=payload)
-
-    if rd.status_code != 200:
-        raise AssertionError("Could not create or update system in master at URL %s: %s" % (master_api_url,
-                                                                                           str(system_config)))
+    system = master_node["api_connection"].get_system(system_config["_id"])
+    if system is None:
+        logger.info("Adding system '%s' in the master" % system_config["_id"])
+        master_node["api_connection"].add_systems([system_config])
+    else:
+        logger.info("Modifying existing system '%s' in the master" % system_config["_id"])
+        system.modify(system_config)
 
 
 def assert_slave_systems(master_node, slave_nodes):
 
     for slave_node in slave_nodes:
+        logger.info("Processing slave system '%s'.." % slave_node["_id"])
         system_config = {
                 "_id": "slave-%s" % slave_node["_id"],
                 "name": slave_node["_id"],
@@ -160,7 +148,7 @@ def assert_sync_pipes(master_node, slave_nodes):
     # that do
 
     for slave_node in slave_nodes:
-        logger.info("Processing slave %s" % slave_node["_id"])
+        logger.info("Processing slave sync pipes for '%s'" % slave_node["_id"])
 
         # Delete pipes whose dataset used to exist in the slave but has been deleted since the last time we checked
         for dataset in slave_node.get("datasets_to_delete", []):
@@ -195,7 +183,7 @@ def assert_sync_pipes(master_node, slave_nodes):
             if pipe is not None:
                 # The pipe exists, so update it (in case someone has modified it)
                 pipe.modify(pipe_config)
-                logger.info("Modyfying existing pipe '%s' in the master" % pipe_id)
+                logger.info("Modifying existing pipe '%s' in the master" % pipe_id)
             else:
                 # New pipe - post it
                 master_node["api_connection"].add_pipes(pipe_id, [pipe_config])
@@ -230,8 +218,11 @@ if __name__ == '__main__':
     # Setup phase - create systems for all slaves in the master
 
     assert_slave_systems(master_node, slave_nodes)
+    logger.info("Systems updated in master, starting monitoring slaves...")
 
     while True:
+        logger.info("Updating master pipes from slaves...")
+
         # Get datasets we want to sync
         get_slave_datasets(slave_nodes)
 
@@ -239,4 +230,6 @@ if __name__ == '__main__':
         assert_sync_pipes(master_node, slave_nodes)
 
         # Sleep for a while then go again
+        logger.info("Master updated to sync from slaves, sleeping for 5 minutes...")
+
         sleep(5*60)
