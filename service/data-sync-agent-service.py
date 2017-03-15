@@ -160,7 +160,7 @@ def assert_sync_pipes(master_node, slave_nodes):
                     "dataset": dataset
                 },
                 "pump": {
-                    "schedule_interval": slave_node.get("sync_interval", 30)
+                    "schedule_interval": slave_node.get("sync_interval", 300)
                 }
             }
 
