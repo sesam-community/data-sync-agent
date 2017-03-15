@@ -152,7 +152,8 @@ def assert_sync_pipes(master_node, slave_nodes):
                     "system": "slave-%s" % slave_node["_id"],
                     "url": dataset,
                     "supports_since": True,
-                    "is_chronological": True
+                    "is_chronological": True,
+                    "add_namespaces": False
                 },
                 "sink": {
                     "type": "dataset",
