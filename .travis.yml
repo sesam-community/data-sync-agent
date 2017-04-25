@@ -8,7 +8,5 @@ python:
 services:
   - docker
 
-script: true
-
-after_success:
+script:
   - bash <(curl -s https://raw.githubusercontent.com/sesam-community/guidelines/master/after_success.sh)
